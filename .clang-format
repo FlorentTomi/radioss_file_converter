@@ -1,0 +1,24 @@
+﻿---
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: true
+  AfterClass: true
+  AfterControlStatement: true
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterStruct: true
+  BeforeCatch: true
+  BeforeElse: true
+  BeforeLambdaBody: true
+  BeforeWhile: true
+IndentCaseLabels: true
+Language: Cpp
+PointerAlignment: Left
+AlwaysBreakTemplateDeclarations: true
+SortIncludes: true
+SpaceAfterTemplateKeyword: false
+TabWidth: '2'
+UseTab: Never
+
+...

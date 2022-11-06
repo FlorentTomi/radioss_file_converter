@@ -1,0 +1,6 @@
+target_sources(${PROJECT_NAME} PRIVATE radioss_io.cpp)
+target_sources(${PROJECT_NAME} PRIVATE radioss_node.cpp)
+target_sources(${PROJECT_NAME} PRIVATE radioss_element.cpp)
+target_sources(${PROJECT_NAME} PRIVATE radioss_part.cpp)
+target_sources(${PROJECT_NAME} PRIVATE radioss_geometry.cpp)
+target_sources(${PROJECT_NAME} PRIVATE radioss.cpp)

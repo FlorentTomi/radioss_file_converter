@@ -85,16 +85,13 @@ auto main(int argc, char** argv) -> int
 {
   namespace boost_po = boost::program_options;
 
-  static constexpr std::string_view ExampleIn = "../example_files/Ellipsoid_75_1_1_300_105A001";
-  static constexpr std::string_view ExampleOut = "test.csv";
-
   auto opt_description = boost_po::options_description{"allowed options"};
 
   // clang-format off
   opt_description.add_options()
     ("help,h", "produce help message")
-    ("input,i", boost_po::value<std::filesystem::path>()->required()->default_value(ExampleIn.data()), "input file (RunnameAXXX)")
-    ("output,o", boost_po::value<std::filesystem::path>()->required()->default_value(ExampleOut.data()), "output file (*.json, *.vtk, *.csv)");
+    ("input,i", boost_po::value<std::filesystem::path>()->required(), "input file (RunnameAXXX)")
+    ("output,o", boost_po::value<std::filesystem::path>()->required(), "output file (*.json, *.vtk, *.csv)");
   // clang-format on
 
   boost_po::variables_map var_map;

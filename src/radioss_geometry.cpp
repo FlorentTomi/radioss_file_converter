@@ -15,14 +15,6 @@
 #include <cstdint>
 #include <utility>
 
-static auto fix_name(std::string const& name) -> std::string
-{
-  std::string replacementName = name;
-  std::replace(std::begin(replacementName), std::end(replacementName), ' ',
-               '_');
-  return replacementName;
-}
-
 auto radioss::io::__details::read_data(std::ifstream& stream,
                                        radioss::GeometrySPH& geometry,
                                        std::bitset<10> const& flags) -> void
@@ -714,7 +706,7 @@ auto radioss::Geometry2D::add_to_unstructured_grid(
 
     for (auto const& [scalar_function_name, scalar_function] : node.scalar_functions)
     {
-      auto fixed_scalar_function_name = ::fix_name(scalar_function_name);
+      auto fixed_scalar_function_name = radioss::io::utils::fix_name(scalar_function_name);
       auto* scalar_function_data = point_data->GetArray(fixed_scalar_function_name.c_str());
       if (scalar_function_data == nullptr)
       {
@@ -731,7 +723,7 @@ auto radioss::Geometry2D::add_to_unstructured_grid(
     
     for (auto const& [vector_name, vector] : node.vectors)
     {
-      auto fixed_vector_name = ::fix_name(vector_name);
+      auto fixed_vector_name = radioss::io::utils::fix_name(vector_name);
       auto* vector_data = point_data->GetArray(fixed_vector_name.c_str());
       if (vector_data == nullptr)
       {

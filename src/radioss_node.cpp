@@ -23,3 +23,36 @@ auto radioss::Node2D::add_to_ptree(boost::property_tree::ptree& ptree,
 
   ptree.put_child(key, child);
 }
+
+auto radioss::Node2D::add_to_csv(std::ostream& stream) const -> void
+{
+  stream << coordinates[0] << ",";
+  stream << coordinates[1] << ",";
+  stream << coordinates[2] << ",";
+  stream << norm[0] << ",";
+  stream << norm[1] << ",";
+  stream << norm[2] << ",";
+  
+  for (auto const& [_, scalar_function] : scalar_functions)
+  {
+    stream << scalar_function << ",";
+  }
+  
+  for (auto const& [_, vector] : vectors)
+  {
+    stream << vector[0] << ",";
+    stream << vector[1] << ",";
+    stream << vector[2] << ",";
+  }
+
+  if (mass.has_value())
+  {
+    stream << mass.value();
+  }
+  stream << ",";
+
+  if (internal_number.has_value())
+  {
+    stream << internal_number.value();
+  }
+}

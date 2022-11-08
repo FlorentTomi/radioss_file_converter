@@ -55,6 +55,12 @@ static auto save_as_vtk(radioss::Radioss const& data,
   writer->Update();
 }
 
+static auto save_as_csv(radioss::Radioss const& data,
+                        std::filesystem::path const& filepath) -> void
+{
+  radioss::io::write_csv(data, filepath);
+}
+
 static auto get_save_function(std::filesystem::path const& filepath)
     -> std::function<void(radioss::Radioss const&,
                           std::filesystem::path const&)>
@@ -67,6 +73,10 @@ static auto get_save_function(std::filesystem::path const& filepath)
   {
     return ::save_as_vtk;
   }
+  else if (filepath.extension() == ".csv")
+  {
+    return ::save_as_csv;
+  }
 
   return nullptr;
 }
@@ -75,13 +85,16 @@ auto main(int argc, char** argv) -> int
 {
   namespace boost_po = boost::program_options;
 
+  static constexpr std::string_view ExampleIn = "../example_files/Ellipsoid_75_1_1_300_105A001";
+  static constexpr std::string_view ExampleOut = "test.csv";
+
   auto opt_description = boost_po::options_description{"allowed options"};
 
   // clang-format off
   opt_description.add_options()
     ("help,h", "produce help message")
-    ("input,i", boost_po::value<std::filesystem::path>()->required(), "input file (RunnameAXXX)")
-    ("output,o", boost_po::value<std::filesystem::path>()->required(), "output file (*.json, *.vtk)");
+    ("input,i", boost_po::value<std::filesystem::path>()->required()->default_value(ExampleIn.data()), "input file (RunnameAXXX)")
+    ("output,o", boost_po::value<std::filesystem::path>()->required()->default_value(ExampleOut.data()), "output file (*.json, *.vtk, *.csv)");
   // clang-format on
 
   boost_po::variables_map var_map;

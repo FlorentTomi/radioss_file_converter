@@ -6,9 +6,9 @@
 #include <array>
 #include <map>
 #include <optional>
+#include <ostream>
 #include <string>
 #include <vector>
-
 
 namespace radioss
 {
@@ -29,6 +29,7 @@ struct Node2D
 
   auto add_to_ptree(boost::property_tree::ptree& ptree,
                     std::string const& key) const -> void;
+  auto add_to_csv(std::ostream& stream) const -> void;
 };
 } // namespace radioss
 

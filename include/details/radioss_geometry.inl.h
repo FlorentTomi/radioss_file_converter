@@ -1,5 +1,7 @@
 #include "radioss_geometry.h"
+#include "io/utils.h"
 
+#include <vtkFloatArray.h>
 #include <vtkIntArray.h>
 #include <vtkCellData.h>
 
@@ -8,14 +10,6 @@
 
 namespace radioss::io::__details
 {
-static auto fix_name(std::string const& name) -> std::string
-{
-  std::string replacementName = name;
-  std::replace(std::begin(replacementName), std::end(replacementName), ' ',
-               '_');
-  return replacementName;
-}
-
 auto read_data(std::ifstream& stream, radioss::GeometrySPH& geometry,
                std::bitset<10> const& flags) -> void;
 auto read_data(std::ifstream& stream, radioss::Geometry1D& geometry,
@@ -99,7 +93,7 @@ auto radioss::Geometry<Dimension, Element>::add_to_unstructured_grid(
          element.scalar_functions)
     {
       auto fixed_scalar_function_name =
-          element_prefix + radioss::io::__details::fix_name(scalar_function_name);
+          element_prefix + radioss::io::utils::fix_name(scalar_function_name);
       auto* scalar_function_data =
           cell_data->GetArray(fixed_scalar_function_name.c_str());
       if (scalar_function_data == nullptr)
@@ -118,7 +112,7 @@ auto radioss::Geometry<Dimension, Element>::add_to_unstructured_grid(
 
     for (auto const& [tensor_name, tensor] : element.tensors)
     {
-      auto fixed_tensor_name = element_prefix + radioss::io::__details::fix_name(tensor_name);
+      auto fixed_tensor_name = element_prefix + radioss::io::utils::fix_name(tensor_name);
       auto* tensor_data = cell_data->GetArray(fixed_tensor_name.c_str());
       if (tensor_data == nullptr)
       {

@@ -4,6 +4,7 @@
 #include "io/property_tree.h"
 
 #include <array>
+#include <ios>
 #include <map>
 #include <optional>
 #include <string>
@@ -12,7 +13,8 @@
 
 namespace radioss
 {
-template<std::size_t Dimension, std::size_t ConnectivitySize, std::size_t TensorSize>
+template<std::size_t Dimension, std::size_t ConnectivitySize,
+         std::size_t TensorSize>
 struct Element
 {
   using connectivity_t =
@@ -22,9 +24,12 @@ struct Element
   using tensor_t = std::array<float, TensorSize>;
   using tensors_t = std::map<std::string, tensor_t>;
 
-  constexpr auto dimension() const -> std::size_t { return Dimension; }
-  constexpr auto connectivity_size() const -> std::size_t { return ConnectivitySize; }
-  constexpr auto tensor_size() const -> std::size_t { return TensorSize; }
+  static constexpr auto dimension() -> std::size_t { return Dimension; }
+  static constexpr auto connectivity_size() -> std::size_t
+  {
+    return ConnectivitySize;
+  }
+  static constexpr auto tensor_size() -> std::size_t { return TensorSize; }
 
   connectivity_t connectivity = {};
   bool deleted = {};
@@ -35,6 +40,7 @@ struct Element
 
   auto add_to_ptree(boost::property_tree::ptree& ptree,
                     std::string const& key) const -> void;
+  auto add_to_csv(std::ostream& stream) const -> void;
 };
 
 using ElementSPH = Element<0, 1, 6>;
@@ -49,6 +55,50 @@ struct Element1D : Element<1, 2, 9>
                     std::string const& key) const -> void;
 };
 } // namespace radioss
+
+template<std::size_t Dimension, std::size_t ConnectivitySize,
+         std::size_t TensorSize>
+auto radioss::Element<Dimension, ConnectivitySize, TensorSize>::add_to_csv(
+    std::ostream& stream) const -> void
+{
+  if constexpr (connectivity_size() == 1)
+  {
+    stream << connectivity << ",";
+  }
+  else
+  {
+    for (auto connectivity_idx : connectivity)
+    {
+      stream << connectivity_idx << ",";
+    }
+  }
+
+  stream << std::boolalpha << deleted << ",";
+
+  for (auto const& [_, scalar_function] : scalar_functions)
+  {
+    stream << scalar_function << ",";
+  }
+
+  for (auto const& [_, tensor] : tensors)
+  {
+    for (auto tensor_val : tensor)
+    {
+      stream << tensor_val << ",";
+    }
+  }
+
+  if (mass.has_value())
+  {
+    stream << mass.value();
+  }
+  stream << ",";
+
+  if (internal_number.has_value())
+  {
+    stream << internal_number.value();
+  }
+}
 
 #include "details/radioss_element.inl.h"
 

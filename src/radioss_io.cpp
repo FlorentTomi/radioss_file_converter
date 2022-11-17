@@ -1,10 +1,12 @@
 #include "radioss_io.h"
 #include "io/utils.h"
 #include "radioss.h"
+#include "radioss_geometry.h"
 
 #include <cstdlib>
 #include <exception>
 #include <optional>
+#include <string>
 #include <type_traits>
 
 #include <algorithm>
@@ -14,6 +16,194 @@
 #include <iterator>
 #include <utility>
 #include <vector>
+
+static auto suffix_filepath(std::filesystem::path const& filepath,
+                            std::string const& suffix) -> std::filesystem::path
+{
+  std::filesystem::path stem = filepath.stem();
+  stem += suffix;
+
+  std::filesystem::path new_filename = stem;
+  new_filename += filepath.extension();
+
+  auto new_filepath = filepath;
+  new_filepath.remove_filename();
+  new_filepath /= new_filename;
+
+  return new_filepath;
+}
+
+static auto write_nodes_csv(radioss::Geometry2D const& data,
+                            std::filesystem::path const& filepath) -> void
+{
+  auto const& nodes = data.nodes;
+  if (nodes.empty())
+  {
+    return;
+  }
+
+  std::ofstream stream(::suffix_filepath(filepath, "_nodes"));
+
+  stream << "coordinates_x,";
+  stream << "coordinates_y,";
+  stream << "coordinates_z,";
+  stream << "norm_x,";
+  stream << "norm_y,";
+  stream << "norm_z,";
+
+  for (auto const& [scalar_function_name, _] : nodes.front().scalar_functions)
+  {
+    stream << scalar_function_name << ",";
+  }
+
+  for (auto const& [vector_name, _] : nodes.front().vectors)
+  {
+    stream << vector_name + "_x,";
+    stream << vector_name + "_y,";
+    stream << vector_name + "_z,";
+  }
+
+  stream << "mass,";
+  stream << "internal_number";
+  stream << std::endl;
+
+  for (auto const& node : nodes)
+  {
+    node.add_to_csv(stream);
+    stream << std::endl;
+  }
+}
+
+template<std::size_t Dimension>
+static auto get_tensor_suffix(std::size_t idx) -> std::string
+{
+  if constexpr (Dimension == 2)
+  {
+    switch (idx)
+    {
+      case 0:
+        return "x";
+
+      case 1:
+        return "y";
+
+      case 2:
+        return "xy";
+
+      default:
+        return std::to_string(idx);
+    }
+  }
+  else if (Dimension == 3)
+  {
+    switch (idx)
+    {
+      case 0:
+        return "x";
+
+      case 1:
+        return "y";
+
+      case 2:
+        return "z";
+
+      case 3:
+        return "xy";
+
+      case 4:
+        return "yz";
+
+      case 5:
+        return "zx";
+
+      default:
+        return std::to_string(idx);
+    }
+  }
+  else if (Dimension == 1)
+  {
+    switch (idx)
+    {
+      case 0:
+        return "x";
+
+      case 1:
+        return "y";
+
+      case 2:
+        return "z";
+
+      case 3:
+        return "xy";
+
+      case 4:
+        return "yz";
+
+      case 5:
+        return "zx";
+
+      default:
+        return std::to_string(idx);
+    }
+  }
+  else
+  {
+    return std::to_string(idx);
+  }
+}
+
+template<std::size_t Dimension, class Element>
+static auto
+write_elements_csv(radioss::Geometry<Dimension, Element> const& data,
+                   std::filesystem::path const& filepath)
+{
+  auto const& elements = data.elements;
+  if (elements.empty())
+  {
+    return;
+  }
+
+  std::string suffix = "_" + std::to_string(Dimension) + "d";
+  std::ofstream stream(::suffix_filepath(filepath, suffix));
+
+  if constexpr (Element::connectivity_size() == 1)
+  {
+    stream << "node_index,";
+  }
+  else
+  {
+    for (std::size_t i = 0; i < Element::connectivity_size(); ++i)
+    {
+      stream << "node_index_" << i << ",";
+    }
+  }
+
+  stream << "deleted,";
+
+  for (auto const& [scalar_function_name, _] :
+       elements.front().scalar_functions)
+  {
+    stream << scalar_function_name << ",";
+  }
+
+  for (auto const& [tensor_name, _] : elements.front().tensors)
+  {
+    for (std::size_t i = 0; i < Element::tensor_size(); ++i)
+    {
+      stream << tensor_name << "_" << ::get_tensor_suffix<Dimension>(i) << ",";
+    }
+  }
+
+  stream << "mass,";
+  stream << "internal_number";
+  stream << std::endl;
+
+  for (auto const& element : elements)
+  {
+    element.add_to_csv(stream);
+    stream << std::endl;
+  }
+}
 
 auto radioss::io::__details::read_data(std::ifstream& stream, std::size_t& data)
     -> void
@@ -238,41 +428,21 @@ auto radioss::io::read(std::filesystem::path const& filepath)
 auto radioss::io::write_csv(radioss::Radioss const& data,
                             std::filesystem::path const& filepath) -> void
 {
-  auto const& geometry_2d = data.geometry_2d;
-  auto const& nodes = geometry_2d.nodes;
-  if (nodes.empty())
+  ::write_nodes_csv(data.geometry_2d, filepath);
+  ::write_elements_csv(data.geometry_2d, filepath);
+
+  if (data.geometry_3d.has_value())
   {
-    return;
+    ::write_elements_csv(data.geometry_3d.value(), filepath);
   }
-
-  std::ofstream stream(filepath);
-
-  stream << "coordinates_x,";
-  stream << "coordinates_y,";
-  stream << "coordinates_z,";
-  stream << "norm_x,";
-  stream << "norm_y,";
-  stream << "norm_z,";
-
-  for (auto const& [scalar_function_name, _] : nodes.front().scalar_functions)
+  
+  if (data.geometry_1d.has_value())
   {
-    stream << scalar_function_name << ",";
+    ::write_elements_csv(data.geometry_1d.value(), filepath);
   }
-
-  for (auto const& [vector_name, _] : nodes.front().vectors)
+  
+  if (data.geometry_sph.has_value())
   {
-    stream << vector_name + "_x,";
-    stream << vector_name + "_y,";
-    stream << vector_name + "_z,";
-  }
-
-  stream << "mass,";
-  stream << "internal_number";
-  stream << std::endl;
-
-  for (auto const& node : nodes)
-  {
-    node.add_to_csv(stream);
-    stream << std::endl;
+    ::write_elements_csv(data.geometry_sph.value(), filepath);
   }
 }
